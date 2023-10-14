@@ -19,9 +19,43 @@ ybound = 0
 move = 4
 jready = true --boolean for jump readyness
 
+--------------------------------* Kylie
+tile_x = 0
+tile_y = 0
+map_tile = 0
+flag_tile = 0
+
+
+local hook_x, hook_y = -100 -- Position of the grappling hook at its current position
+
+-- Flag to track whether the grappling hook has been launched
+local hook_launched = false
+
+-- Rope length (adjust as needed)
+local rope_length = 32
+
+-- Hook speed (adjust as needed)
+local hook_speed = 4
+
+local player_speed = 2
+----------------------------------*Kylie
 
 -->8
 --draw
+----------------------------------#Kylie
+-- Define off-screen coordinates
+local offscreen_x = -100
+local offscreen_y = -100
+
+-- Define rope start and end coordinates
+local rope_start_x = offscreen_x
+local rope_start_y = offscreen_y
+local rope_end_x = offscreen_x
+local rope_end_y = offscreen_y
+
+-- Define rope visibility flag
+local hook_launched = false
+----------------------------------#Kylie
 function _draw()
   cls()
 
@@ -31,18 +65,140 @@ function _draw()
   //draw player
   spr(s,p.x,p.y,1,1,f)
 
+----------------------------------$Kylie
+  //  -- Draw the grappling hook as a line
+  //  line(hook_x, hook_y, p.x, p.y, 8)
+-- Draw the rope if it's visible
+if hook_launched then
+    local num_segments = 10  -- Adjust the number of rope segments as needed
+    local segment_length_x = (rope_end_x - hook_x) / num_segments
+    local segment_length_y = (rope_end_y - hook_y) / num_segments
 
-  //print debugging info
-  print("x"..p.x)
-  print("y"..p.y)
-  print("rx"..rx)
-  print("by"..by)
+    for i = 1, num_segments do
+        local segment_x = hook_x + i * segment_length_x
+        local segment_y = hook_y + i * segment_length_y
+
+        -- Check for collision with flag 4 (ice tiles)
+        if grapple_collision(segment_x, segment_y, 3) then
+            p.x = hook_x
+            p.y = hook_y
+            break  -- Stop the rope when it hits a flag 4 tile
+        end
+
+
+        spr(6, segment_x, segment_y, 1, 1) -- Draw the rope segment
+    end
+end
+
+  	//print debugging info
+  	print("x"..p.x)
+  	print("y"..p.y)
+  	print("rx"..rx)
+  	print("by"..by)
+    
+      print(tile_x..","..tile_y)
+      print(map_tile)
+      print(flag_tile)
+	----------------------------------$Kylie
 
 
 end
 -->8
 --update
 function _update()
+
+----------------------------------<3Kylie
+    -- Grappling hook logic
+    if btnp(4) then -- "Z" key
+        local hook_direction_x = 0
+        local hook_direction_y = 0
+
+        if btn(0) then  -- left button pressed
+            p.x -= player_speed
+            hook_direction_x = -1
+        elseif btn(1) then  -- right button pressed
+            hook_direction_x = 1
+        elseif btn(2) then  -- up button pressed
+            hook_direction_y = -1
+        end
+
+        if hook_direction_x ~= 0 or hook_direction_y ~= 0 then
+            hook_launched = true
+            hook_x = p.x  -- Set the hook's starting X coordinate
+            hook_y = p.y  -- Set the hook's starting Y coordinate
+
+            -- Calculate the direction and distance
+            local direction_length = sqrt(hook_direction_x^2 + hook_direction_y^2)
+            local hook_dx = hook_direction_x / direction_length * rope_length
+            local hook_dy = hook_direction_y / direction_length * rope_length
+
+            rope_end_x = hook_x + hook_dx -- Endpoint X coordinate
+            rope_end_y = hook_y + hook_dy -- Endpoint Y coordinate
+
+            -- Increase player speed while using the grappling hook
+            player_speed = hook_speed
+        end
+    end
+
+    if hook_launched then
+        
+        local dx = rope_end_x - hook_x -- Horizontal distance the hook has moved
+        local dy = rope_end_y - hook_y -- Vertical distance
+        local distance = sqrt(dx * dx + dy * dy) -- Calculate the distance
+
+        if distance > 1 then
+            local hook_direction_x = dx / distance
+            local hook_direction_y = dy / distance
+
+            -- Update the player's position
+            p.x = hook_x
+            p.y = hook_y
+
+            
+
+            -- Check for collision with background platforms for the rope
+            if grapple_collision(hook_x, hook_y, 3) then
+                p.x = hook_x
+                p.y = hook_y
+
+                hook_launched = false
+
+
+            
+            -- Adjust the player's position to the end of the rope
+            --p.x -= 0.5
+            --p.x = rope_end_x
+            --p.y = rope_end_y
+
+            end
+            hook_x = hook_x + hook_direction_x * hook_speed --segments
+            hook_y = hook_y + hook_direction_y * hook_speed
+                -- Adjust the hook_x and hook_y to stop just before the platform
+                --local tile_x = flr(hook_x / 8) -- Assuming 8x8 pixel tiles
+                --local tile_y = flr(hook_y / 8)
+                --hook_x = tile_x * 8 - hook_direction_x * hook_speed
+                --hook_y = tile_y * 8 - hook_direction_y * hook_speed
+            --end
+        --end
+            -- Check if the hook reaches the screen edge
+            if hook_x < 0 or hook_x > 127 or hook_y < 0 or hook_y > 127 then
+                hook_launched = false
+            end
+        else
+            hook_launched = false
+        end
+    end
+
+    -- Check if the "Z" button is pressed to retract the grappling hook
+    if btnp(5) then
+        hook_launched = false
+        player_speed = 2
+    end
+----------------------------------<3Kylie
+
+
+
+
 	//set animation bool to false 
  a=false
 
@@ -193,6 +349,29 @@ function jump(j)
 	end
 end
 -->8
+
+----------------------------------&Kylie
+-->8
+function grapple_collision(x,y,f)
+    local tile_x = flr(x / 8)
+    local tile_y = flr(y / 8)
+    
+    map_tile = mget(tile_x, tile_y)
+    flag_tile = fget(map_tile)
+
+    local tile_left = mget(tile_x, tile_y) -- Check the current tile and adjacent tiles
+    local tile_right = mget(tile_x + 1, tile_y)
+    local tile_up = mget(tile_x, tile_y - 1)
+    local tile_down = mget(tile_x, tile_y + 1)
+
+    -- Check if the current tile or any adjacent tile has the specified flag (4 in this case)
+    if fget(tile_left, f) or fget(tile_right, f)  then
+        return true -- Collision detected
+    end
+    
+    return false
+end
+----------------------------------&Kylie
 
 -->8
 function collision(x,y,f)
