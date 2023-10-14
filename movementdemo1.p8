@@ -11,178 +11,41 @@ f=false --boolean for sprite flip
 a=false --boolean for animation
 p={}   --the player table
 p.x=64 --player  x position (left)
-p.y=64 --player y variable (top)h
+p.y=64 --player y variable (top)
 by=71  --player x position (right)
 rx=71  --player y position (bottom)
 ytile = 0 --
 ybound = 0
 move = 4
-jready = true --boolean for jump 
+jready = true --boolean for jump readyness
 
-tile_x = 0
-tile_y = 0
-map_tile = 0
-flag_tile = 0
-
--- Position of the grappling hook at its current position
-local hook_x, hook_y = -100
-
--- Flag to track whether the grappling hook has been launched
-local hook_launched = false
-
--- Rope length (adjust as needed)
-local rope_length = 32
-
--- Hook speed (adjust as needed)
-local hook_speed = 2
-
-local player_attached = false  -- Whether the player is attached to the rope
 
 -->8
 --draw
--- Define off-screen coordinates
-local offscreen_x = -100
-local offscreen_y = -100
-
--- Define rope start and end coordinates
-local rope_start_x = offscreen_x
-local rope_start_y = offscreen_y
-local rope_end_x = offscreen_x
-local rope_end_y = offscreen_y
-
--- Define rope visibility flag
-local hook_launched = false
 function _draw()
   cls()
-  
+
   //draw map
   map(0,0,0,0,16,16)
-  
+
   //draw player
   spr(s,p.x,p.y,1,1,f)
-  
 
-  //  -- Draw the grappling hook as a line
-  //  line(hook_x, hook_y, p.x, p.y, 8)
--- Draw the rope if it's visible
-if hook_launched then
-    local num_segments = 10  -- Adjust the number of rope segments as needed
-    local segment_length_x = (rope_end_x - hook_x) / num_segments --create segment for x (horizontal)
-    local segment_length_y = (rope_end_y - hook_y) / num_segments --create segment for y (vertical)
 
-    --loop for the # of segments
-    --animate the "shooting" of the grappling hook
-    for i = 1, num_segments do
-        local segment_x = hook_x + i * segment_length_x
-        local segment_y = hook_y + i * segment_length_y
+  //print debugging info
+  print("x"..p.x)
+  print("y"..p.y)
+  print("rx"..rx)
+  print("by"..by)
 
-        spr(6, segment_x, segment_y, 1, 1) --sprite 6 = grapple sprite
-    end
-end 
-  
-  	//print debugging info
-  	print("x"..p.x)
-  	print("y"..p.y)
-  	print("rx"..rx)
-  	print("by"..by)
-    
-      print(tile_x..","..tile_y)
-      print(map_tile)
-      print(flag_tile)
-	
- 
+
 end
 -->8
 --update
 function _update()
-    -- Grappling hook logic
-    if btnp(4) then --"z"
-        local hook_direction_x = 0
-        local hook_direction_y = 0
-
-        if btn(0) then  -- left button pressed
-            hook_direction_x = -1
-        elseif btn(1) then  -- right button pressed
-            hook_direction_x = 1
-        elseif btn(2) then  -- up button pressed
-            hook_direction_y = -1
-        end
-
-        if hook_direction_x ~= 0 or hook_direction_y ~= 0 then
-            hook_launched = true
-        hook_x = p.x  -- Set the hook's starting X coordinate
-        hook_y = p.y  -- Set the hook's starting Y coordinate
-
-        --makes sure the hook travels exactly "rope_length" in its given direction x,y
-        --CRUCIAL STEP to determine the endpoint of hook !!!!!
-        local direction_length = sqrt(hook_direction_x^2 + hook_direction_y^2)
-        hook_dx = hook_direction_x / direction_length * rope_length
-        hook_dy = hook_direction_y / direction_length * rope_length
-
-        rope_end_x = hook_x + hook_dx --x coordinate of endpoint
-        rope_end_y = hook_y + hook_dy --y coordinate of endpoint
-
-        hook_launched = true
-        end
-    end
-
-    if hook_launched then
-        local dx = rope_end_x - hook_x --horizontal distance the hook has moved
-        local dy = rope_end_y - hook_y --vertical ^^
-        --finds straight line distance bet. points
-        local distance = sqrt(dx * dx + dy * dy) --used to cehck if hook should be retracted or has collided.
-
-        if distance > 1 then
-            --calculate the direction the hook should move
-            local hook_direction_x = dx / distance
-            local hook_direction_y = dy / distance
-            --move hook in direction with speed
-            hook_x = hook_x + hook_direction_x * hook_speed
-            hook_y = hook_y + hook_direction_y * hook_speed
-
-            -- Check for collision with background platforms for the rope
-        local rope_collision = grapple_collision(hook_x, hook_y, 4)
-        local rope_collision_x = flr((hook_x + 4) / 8)
-        local rope_collision_y = flr((hook_y + 4) / 8)
-
-        //local map_tile = mget(rope_collision_x, rope_collision_y)
-        //local flag_tile = fget(map_tile)
-
-        //if fget(map_tile, 4) then
-            //hook_launched = false
-        //end
-
-        if rope_collision == true then
-            hook_launched = false
-
-            -- Adjust the hook_x and hook_y to the collision point
-            hook_x = rope_collision_x * 8
-            hook_y = rope_collision_y * 8
-        else
-            hook_launched = true
-        end
-            -- Check if the hook reaches the screen edge
-            if hook_x < 0 or hook_x > 127 or hook_y < 0 or hook_y > 127 then
-                hook_launched = false
-            end
-        else
-            hook_launched = false
-        end
-    end
-
-    -- Check if the "Z" button is pressed to retract the grappling hook
-    if btnp(5) then
-        hook_launched = false
-    end
-
-
-
-
-
-
 	//set animation bool to false 
  a=false
- 
+
  //gravity controls,
  //runs while the player is in the air and not jumping
  if((jumping == false) and (collision(p.x,by+1,3)==false) and (collision(rx,by+1,3)==false)) then
@@ -197,22 +60,22 @@ function _update()
 	 	p.y=p.y+5/6
 	 end
 	end
-	
+
 	//jump controls 
-	
+
 	//call jump function with jump cooldown
 	jump(j)
-	
+
 	//decrement jump cooldown while its non zero 
 	if(j>0) then
 		j-=1
 	end
-	
+
 	//check if jump cooldown is over
 	if(j==0) then
 		jumping=false
 	end
-	
+
 	//check if player is ready to jump
 	//runs when the player is standing on the ground
 	if((collision(p.x,by+1,3)==true) or (collision(rx,by+1,3)==true)) then
@@ -221,11 +84,11 @@ function _update()
  	//reset gravity timer
  	g=0
  end
- 
+
  //adjust bottom and right player coordinates
  by=p.y+7
  rx=p.x+7
- 
+
  //left controlls
  if btn(0) then
  	//checks if there is a wall where the player will be moving to
@@ -246,9 +109,9 @@ function _update()
  	 //enable jumping
  	 jready=true
   end
-  
+
  end
- 
+
  //right controls 
  if btn(1) then
  	//checks if there is a wall where the player will be moving to
@@ -272,7 +135,7 @@ function _update()
  	 end
   end
  end
- 
+
  //up controls 
  if btn(2) then
 	 //checks if the player is able to jump
@@ -292,10 +155,10 @@ function _update()
 	 	end
 	 end
  end
- 
+
  //call animation funtion if there is active animation
  if a then animation() end
- 
+
 end
 
 //sprite animation controls 
@@ -332,38 +195,24 @@ end
 -->8
 
 -->8
-function grapple_collision(x,y,f)
-    local tile_x = flr(x / 8)
-    local tile_y = flr(y / 8)
-    
-    map_tile = mget(tile_x, tile_y)
-    flag_tile = fget(map_tile)
-
-    if fget(mget(tile_x, tile_y), f) then
-        return true
-    end
-    
-    return false
-end
--->8
 function collision(x,y,f)
  // postion of the tile containing the input coordinates
  local tilex = ((x-(x%8))/8)
 	local tiley = ((y-(y%8))/8)
-	
+
 	//checks if the given tile has flag f
 	//returns true if so
 	if(fget(mget(tilex,tiley),f) )then
 		return true
 	end
-	
+
 	return false 
 end
 
 
 
-	
-	
+
+
 __gfx__
 0000000008e88e8008e88e8008e88e801cccc1110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000000000877678008776780087767801c1c111100aaaa0000000000000000000000000000000000000000000000000000000000000000000000000000000000
