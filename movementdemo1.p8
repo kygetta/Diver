@@ -192,7 +192,7 @@ function _update()
    --end
    --end
    -- check if the hook reaches the screen edge
-   if hook_x < 0 or hook_x > 127 or hook_y < 0 or hook_y > 127 then
+   if hook_x < 0 or hook_x > 1000 or hook_y < 0 or hook_y > 1000 then
     hook_launched = false
    end
    else
