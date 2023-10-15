@@ -166,8 +166,8 @@ function _update()
    local hook_direction_y = dy / distance
 
    -- update the player's position
-   p.x = hook_x
-   p.y = hook_y      
+   --p.x = hook_x
+   --p.y = hook_y      
 
    -- check for collision with background platforms for the rope
    if grapple_collision(hook_x, hook_y, 3) then
