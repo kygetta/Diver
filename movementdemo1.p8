@@ -420,7 +420,7 @@ end -- end of jump
 function shadow_mask()
 	-- clips a shadow
 	-- will need vars later
-	--clip(40,40,50,50) 
+	clip(40,40,50,50) 
 	-- toggle on and off by
 	-- commenting out!!!!
 	
