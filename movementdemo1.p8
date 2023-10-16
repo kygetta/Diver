@@ -29,6 +29,8 @@ ytile = 0 --
 ybound = 0
 move = 4
 jready = true --boolean for jump readyness
+w1 = 0
+w2 = 0
 
 --------------------------------* kylie
 tile_x = 0
@@ -51,6 +53,7 @@ local hook_speed = 4
 local player_speed = 2
 ----------------------------------*kylie
 
+hp = 3
 -->8
 --draw
 
@@ -72,62 +75,69 @@ local hook_launched = false
 -- _draw func
 function _draw()
   cls()
-  
-  ------------------ims
-  -- shadow mask
-  shadow_mask()
-  ------------------ims
-  
-  //draw map
-  map(0,0,0,0,128,20)
-  
-  //draw player
-  spr(s,p.x,p.y,1,1,f)
-  
-  ----------------------------------$kylie
-  // draw the grappling hook as a line
-  // line(hook_x, hook_y, p.x, p.y, 8)
-		-- draw the rope if it's visible
-		if hook_launched then
-   local num_segments = 10  -- adjust the number of rope segments as needed
-   local segment_length_x = (rope_end_x - hook_x) / num_segments
-   local segment_length_y = (rope_end_y - hook_y) / num_segments
-
-   for i = 1, num_segments do
-    local segment_x = hook_x + i * segment_length_x
-    local segment_y = hook_y + i * segment_length_y
-
-    -- check for collision with flag 4 (ice tiles)
-    if grapple_collision(segment_x, segment_y, 3) then
-     p.x = hook_x
-     p.y = hook_y
-     break  -- stop the rope when it hits a flag 4 tile
-    end
-
-
-    spr(6, segment_x, segment_y, 1, 1) -- draw the rope segment
-   end
-	 end
-
-  	//print debugging info
-  	print("x"..p.x)
-  	print("y"..p.y)
-  	print("rx"..rx)
-  	print("by"..by)
-    
-   print(tile_x..","..tile_y)
-   print(map_tile)
-   print(flag_tile)
-   print(p.crouching)
-   print(p.cs)
-	----------------------------------$kylie
-  
+  --check if player is alive
+  if (hp>0) then
+	  ------------------ims
+	  -- shadow mask
+	  shadow_mask()
+	  ------------------ims
+	  
+	  //draw map
+	  map(0,0,0,0,128,20)
+	  
+	  //draw player
+	  spr(s,p.x,p.y,1,1,f)
+	  
+	  ----------------------------------$kylie
+	  // draw the grappling hook as a line
+	  // line(hook_x, hook_y, p.x, p.y, 8)
+			-- draw the rope if it's visible
+			if hook_launched then
+	   local num_segments = 10  -- adjust the number of rope segments as needed
+	   local segment_length_x = (rope_end_x - hook_x) / num_segments
+	   local segment_length_y = (rope_end_y - hook_y) / num_segments
+	
+	   for i = 1, num_segments do
+	    local segment_x = hook_x + i * segment_length_x
+	    local segment_y = hook_y + i * segment_length_y
+	
+	    -- check for collision with flag 4 (ice tiles)
+	    if grapple_collision(segment_x, segment_y, 3) then
+	     p.x = hook_x
+	     p.y = hook_y
+	     break  -- stop the rope when it hits a flag 4 tile
+	    end
+	
+	
+	    spr(6, segment_x, segment_y, 1, 1) -- draw the rope segment
+	   end
+		 end
+	
+	  	//print debugging info
+	  	print("x"..p.x)
+	  	print("y"..p.y)
+	  	print("rx"..rx)
+	  	print("by"..by)
+	    
+	   print(tile_x..","..tile_y)
+	   print(map_tile)
+	   print(flag_tile)
+	   print(p.crouching)
+   	print(p.cs)
+		----------------------------------$kylie
+  --game over logic
+  else 
+  	map(0,0,0,0,128,20)
+  	print("game over",p.x-8,p.y,8)
+  end
   
  
 end
 -->8
 --update
 function _update()
+--check if player is alive
+if (hp>0) then
 ----------------------------------<3kylie
  -- grappling hook logic
  if btnp(4) then -- "z" key
@@ -216,32 +226,49 @@ function _update()
 	//set animation bool to false 
  a=false
  
+ --spike detecion
+ if ((collision(p.x,by,6)==true) and (collision(rx,by,6)==true)) then 
+		--move player to last safe tile
+		p.y = gy*8
+		p.x = gx*8
+		--turn off gravity and decrement health
+		g=0
+		jumping = true 
+		hp-=1
+ end
+ 
  //gravity controls,
  //runs while the player is in the air and not jumping
  if((jumping == false) and (collision(p.x,by+1,3)==false) and (collision(rx,by+1,3)==false)) then
 		//increment gravity timer
 		g+=1
-		//first 3 frames of desent 
-		//are slower
-		if (g<4) then 
-			p.y=p.y+5/12
+		--move player 
+		if ((collision(p.x,by+g*(5/12),3)==false) and (collision(rx,by+g*(5/12),3)==false)) then	
+			p.y=p.y+g*(5/12)
+		--move player by an adjusted amount if they would be moving into the floor
+		else 
+			p.y=8*(((p.y+g*(5/12))-((p.y+g*(5/12))%8))/8)
 		end
-		//after 3 frames fall speed increases 
-		if (g>3) then 	
-	 	p.y=p.y+5/6
-	 end
 	end
 	
 	
 	
 	//jump controls 	
-	//call jump function with jump cooldown
-	jump(j)
+	//call jump function with jump varables  cooldown
+	jump(j,w1,w2)
+	--decrement wall jump timers
+	if(w1>0) then
+		w1-=1
+	end
+	if(w2>0) then
+		w2-=1
+	end
 	
 	//decrement jump cooldown while its non zero 
 	if(j>0) then
 		j-=1
 	end
+	
 	
 	//check if jump cooldown is over
 	if(j==0) then
@@ -257,6 +284,11 @@ function _update()
  	jready = true
  	//reset gravity timer
  	g=0
+ 	//save player position (last safe tile)
+ 	if((collision(p.x,by+1,3)==true) and (collision(rx,by+1,3)==true)) then
+ 		gx = ((p.x-(p.x%8))/8)
+ 		gy = ((p.y-(p.y%8))/8)
+ 	end
  end
  
  //adjust bottom and right player coordinates
@@ -265,7 +297,7 @@ function _update()
  
  //left controlls
  if btn(0) then
- 
+ 	
  	-- checks if the player is crouching
   -- and next to a half-wall
   if((collision(p.x-1,p.y,5)==true) and (collision(p.x-1,by,5)==true)) then
@@ -290,11 +322,14 @@ function _update()
   if((collision(p.x-1,p.y,4)==true) and  (collision(p.x-1,by,4)==true)) then
  	 //halt gravity
  	 jumping=true
- 	 //enable jumping
- 	 jready=true
+ 	 //enable jumping if cooldown is over
+ 	 if (j==0) then
+ 	 	jready=true
+ 	 end
+ 	 --reset gravity timer and set wall jump timer
+ 	 g=0
+ 	 w1=2
   end
-  
-  
   
  end
  
@@ -324,6 +359,9 @@ function _update()
  	 if (j==0) then
  	 	jready=true
  	 end
+ 	 --reset gravity timer and set wall jump timer
+ 	 g=0
+ 	 w2=2
   end
  end
  
@@ -346,8 +384,8 @@ function _update()
 	 	end
 	 end
 	end
-	
-	---------------ims
+ 
+ ---------------ims
 	-- crouch
 	if btn(⬇️) then
 		p.crouching=true
@@ -368,7 +406,7 @@ function _update()
  cam_x=p.x-64+(p.w/2)
  cam_y=p.y-64+(p.w/2)
  camera(cam_x,cam_y)
- 
+end
 end -- end of _update
 
 
@@ -387,25 +425,29 @@ end -- end of animate
 
 
 //jump function 
-function jump(j)
-	//h is the max jump height
+function jump(j,w1,w2)
+		//h is the max jump height
 	h=12
 	//loop from h to 1
-	//finds the max height the 
-	//player can jump without 
-	//colliding with a wall
+	//finds the max height the player can jump without colliding with a wall
 	for i=h,1,-1 do
 		if((collision(p.x,p.y-i,3)==true) or (collision(rx,p.y-i,3)==true)) then  
 	 		h=i+1
 		end
 	end
-	//the player jumps higher 
-	//the first 2 frames 
+	//the player jumps higher the first 2 frames 
 	if (j>3) then
 		p.y-=h/3
+		--pushes the player off the wall if wall jumping
+		if (w1>0) then
+			p.x+=3
+		end
+		--pushes the player off the wall if wall jumping
+		if (w2>0) then
+			p.x-=3
+		end
 	end
-	//the player jumps lower the 
-	//second 2 frames 
+	//the player jumps lower the second 2 frames 
 	if (j>1) and (j<4) then
 		p.y-=h/6
 	end
@@ -680,7 +722,7 @@ __label__
 
 __gff__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080808080808080808080808080808080808080808080808080808080808080818181818180000000000000000000000000000002020202000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+4040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 4141414141414141414141414141414141414141414141414141414141414141414241414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
 4141414141414141414141414141414241414141414142414141414141424141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -693,8 +735,8 @@ __map__
 54000000000000000000000000000000000000000000004c4d4d510000004c4d4d4f504e5165000000000000000000475e41414143414141414141414152610000000000000000494141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
 556d000000000000000000006e000000000000000000004a4141520000004a414143414152630000000000000000000000475e455e4446455e41424141526100000000000000004b4141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
 414d4d515f4c4d4f4e4f504e4d51000000000000004c4d41414341515f4c4141414141415261000000000000000000000000000000000000004741414152620000000000000000474141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
-414142414d414141424141414141510000000000004a4141414141414d414141414141415262000000000000000000000000000000000000000047414152640000000000000000654a41414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
-5f41414143414141414141414141414d4f504e4d4d414142414141414141414141414142526400006c6d000000000000006d6e6d00000000000000475e5e595d5f57595c000000614a41414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
+414142414d414141424141414141510000000000004a4141414141414d4141414141414152620000000000004c4d51000000000000000000000047414152640000000000000000654a41414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
+5f41414143414141414141414141414d4f504e4d4d414142414141414141414141414142526400006c6d000078757700006d6e6d00000000000000475e5e595d5f57595c000000614a41414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
 414141414141414141415f41414341414141414141414141414141414141414141414141414d4f504e4d5180818081804c4d4f504e510000000000696f706b6700000000000000624a41414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
 414141414141414241414141414141414141414141414141414141414141414141414141414141414141414d4d4d4d4d4142414141415100000000007271000000000000000000644a41414141414142414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
 4141414141414141414141414141414141414141414141414141414141414142414141414141414141414141414141414141414141434151000000007271000000000000004c4d4d4141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000
