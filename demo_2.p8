@@ -101,12 +101,8 @@ function _draw()
   	draw_menu()
   elseif scene=="game_easy" then
   	draw_game()
-	draw_enemy_health()
-	handle_grapple_enemy_collision()
   elseif scene=="game_hard" then
   	draw_game()
-	draw_enemy_health()
-	handle_grapple_enemy_collision()
   end
 end -- end of _draw
 
@@ -251,27 +247,6 @@ function shadow_mask()
 	end
 end -- end of shadow_mask
 
--->8
--- enemy health
-function draw_enemy_health()
-    local bar_width = 10  -- Adjust the width of the health bar as needed
-    local bar_height = 0   -- Adjust the height of the health bar as needed
-    local health_percent = ene.hp / max_hp
-
-    -- Calculate the position for the health bar
-    local bar_x = ene.x - (bar_width - 1) / 2
-    local bar_y = ene.y - bar_height - 1
-
-    -- Calculate the width of the filled part based on the health percentage
-    local filled_width = bar_width * health_percent
-
-    -- Draw the background of the health bar (empty part) in red
-    rectfill(bar_x, bar_y, bar_x + bar_width, bar_y + bar_height, 8)
-
-    -- Draw the actual health part of the health bar, with color based on health percentage
-    local health_color = flr(8 * (1 - health_percent)) + 8
-    rectfill(bar_x, bar_y, bar_x + filled_width, bar_y + bar_height, health_color)
-end
 
 -->8
 -- collision --
@@ -347,24 +322,23 @@ function enemy_movement()
 	eby=ene.y+7
 	erx=ene.x+7
 	
-	-----------------------------
-	-- check aggressive state
+	-- determines where the enemy
+	-- is in comparison to the player
+	if ene.x > p.x then
+		ene.flp=false
+		ene.action="left"
+	else
+		ene.flp=true
+		ene.action="right"
+	end
 	
-	-- enemy checks surroundings
-
-		
-	-----------------------------
-	-- check idle state
-		
+	
 	-- enemy is going left
 	if ene.action=="left" then
 		-- if enemy is going left and runs into wall
 		-- turn around and move right
-		if((collision(ene.x-1,ene.y,3)==true) and (collision(ene.x-1,eby,3)==true)) then
-			ene.action="right"
-			ene.flp=true
-		else
-			ene.x-=1
+		if not((collision(ene.x-1,ene.y,3)==true) and (collision(ene.x-1,eby,3)==true)) then
+			ene.x-=0.50
 		end
 	end
 	
@@ -372,11 +346,8 @@ function enemy_movement()
 	if ene.action=="right" then		
 		-- if enemy is going right and runs into wall
 		-- turn around and move left
-		if((collision(erx+1,ene.y,3)==true) and (collision(erx,eby,3)==true)) then
-			ene.action="left"
-			ene.flp=false
-		else
-			ene.x+=1
+		if not((collision(erx+1,ene.y,3)==true) and (collision(erx,eby,3)==true)) then
+			ene.x+=0.50
 		end
 	end
 	
@@ -834,7 +805,24 @@ if (hp>0) then
  camera(cam_x,cam_y)
 	end
 	
+	-- adds sound effects to the
+	-- game
+	update_sound()
+	
 end -- end of update_game()
+
+
+-- sound effects
+function update_sound()
+	-- checks to see if sound is
+	-- already playing
+	local i=stat(16) 
+ 
+ if i>-1 then 
+   elseif (btn(2)) then sfx(02)
+ end
+
+end -- end of update_sound()
 -->8
 --parameters,
 --exl = left x pos of eneme
@@ -1161,9 +1149,9 @@ __map__
 41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141434141526400005f0000644a41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141
 4141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141520a0a0b0a0b4c4141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141
 __sfx__
-000100002075014750147501575015750167501775017750187500d75019750197501975018750187501675015750087501475013750137501475014750147501475011750147501475015750137501375014750
+000100000071001710037100671007710057100372002720007200072001720037200572007720097200a72009720077200572002720007200072002720047200675008750097500875005750027500075014700
 011000000a1500015000150011500115001150001500015001150021500415002150221502515027150281501c1501715013150101500d1500015001150011500115001150011500115000150001500015000150
-000100000677008770097600a7600a7500b7500c7400d7400e7200e72000000317002d7003400039700000000000000000000000000000000000003a000357003000032700000000000000000000000000000000
+000200000677008770097600a7600a7500b7500c7400d7400e7200e72000000317002d7003400039700000000000000000000000000000000000003a000357003000032700000000000000000000000000000000
 __music__
 00 01424344
 
