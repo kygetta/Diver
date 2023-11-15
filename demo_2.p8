@@ -101,8 +101,12 @@ function _draw()
   	draw_menu()
   elseif scene=="game_easy" then
   	draw_game()
+	draw_enemy_health()
+	handle_grapple_enemy_collision()
   elseif scene=="game_hard" then
   	draw_game()
+	draw_enemy_health()
+	handle_grapple_enemy_collision()
   end
 end -- end of _draw
 
@@ -246,6 +250,28 @@ function shadow_mask()
 		clip(40,40,50,50) --hard mode shadow
 	end
 end -- end of shadow_mask
+
+-->8
+-- enemy health
+function draw_enemy_health()
+    local bar_width = 10  -- Adjust the width of the health bar as needed
+    local bar_height = 0   -- Adjust the height of the health bar as needed
+    local health_percent = ene.hp / max_hp
+
+    -- Calculate the position for the health bar
+    local bar_x = ene.x - (bar_width - 1) / 2
+    local bar_y = ene.y - bar_height - 1
+
+    -- Calculate the width of the filled part based on the health percentage
+    local filled_width = bar_width * health_percent
+
+    -- Draw the background of the health bar (empty part) in red
+    rectfill(bar_x, bar_y, bar_x + bar_width, bar_y + bar_height, 8)
+
+    -- Draw the actual health part of the health bar, with color based on health percentage
+    local health_color = flr(8 * (1 - health_percent)) + 8
+    rectfill(bar_x, bar_y, bar_x + filled_width, bar_y + bar_height, health_color)
+end
 
 
 -->8
