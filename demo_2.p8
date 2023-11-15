@@ -76,7 +76,7 @@ scene ="menu" --starting game state (main menu)
 
 gem_count=0 -- green gem count
 
-
+dmgtimer = 0 -- dmg cooldown
 -->8
 -- draw --
 
@@ -514,21 +514,15 @@ if (hp>0) then
 		end
 	----------------------------------<3kylie
 
-	//set animation bool to false
-	--set hurt value to false 
+	//set animation bool to false 
  a=false
- p.hurt=false
  p.standing=true -- automatically standing
  p.walking=false
 
 	-- simplistic enemy movement
 	enemy_movement()
 	
-	--very quick enemy detection
-	if (p.x==ene.x) and (p.y==ene.y) then
-	 p.hurt=true
-	 hp-=1
-	end
+	
 	
 	
  
@@ -542,6 +536,7 @@ if (hp>0) then
 		g=0
 		jumping=true 
 		hp-=1
+		dmgtimer=5
  end
  
  //gravity controls,
@@ -604,6 +599,21 @@ if (hp>0) then
  by=p.y+7
  rx=p.x+7
  
+ if(dmgtimer > 0) then
+		dmgtimer = dmgtimer-1
+	end
+	
+	if(dmgtimer == 0) then
+		p.hurt = false
+	end
+	
+	--very quick enemy detection
+	if (ecollision(ene.x+1,ene.x+6,ene.y,ene.y+7,p.x,rx,p.y,by) and (dmgtimer == 0)) then
+	 p.hurt=true
+	 hp-=1
+	 dmgtimer = 10
+	end
+	
  //left controlls
  if btn(0) then
  	
@@ -726,6 +736,36 @@ if (hp>0) then
 	end
 	
 end -- end of update_game()
+-->8
+--parameters,
+--exl = left x pos of eneme
+--exr = right y pos of enemy
+--eyt = top y pos of enemy
+--eyb = bottom y pos of enemy
+--lx = left x pos of player
+--rx = right x pos of player
+--ty = top y pos of player
+--by = bottom y pos of plauer
+function ecollision(exl,exr,eyt,eyb,lx,rx,ty,by)
+	collison = false 
+	if((by>=eyt) and (by<=eyb)) then
+		if((rx>=exl) and (rx<=exr)) then
+			collison = true
+		end
+		if((lx>=exl) and (lx<=exr)) then
+			collison = true
+		end
+	end
+	if((ty>=eyt) and (ty<=eyb)) then
+		if((rx>=exl) and (rx<=exr)) then
+			collison = true
+		end
+		if((lx>=exl) and (lx<=exr)) then
+			collison = true
+		end
+	end
+	return collison
+end
 __gfx__
 0000000000ccaac00000000000ccaac000ccaac00000000000ccaac0000000000088888000000000000000000000000000000000000880000000000000000000
 000000000cd6996000ccaac00cd699600cd69960000000000cd6996000ccaac008888880022022000000000000000000000b7000008788000000000000000000
