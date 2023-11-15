@@ -119,6 +119,40 @@ function draw_health()
 	
 end --end of draw_health
 
+-->8
+--enemy damage
+function handle_grapple_enemy_collision()
+    if hook_launched then
+        local dx = rope_end_x - hook_x
+        local dy = rope_end_y - hook_y
+        local distance = sqrt(dx * dx + dy * dy)
+
+        if distance > 1 then
+            local hook_direction_x = dx / distance
+            local hook_direction_y = dy / distance
+
+            for i = 1, 10 do  -- Assuming 10 segments, adjust as needed
+                local segment_x = hook_x + i * (dx / 10)
+                local segment_y = hook_y + i * (dy / 10)
+
+                -- Check for collision with the enemy
+                if damage_grapple_collision(segment_x, segment_y, 6) then
+                    ene.hp = max(0, ene.hp - 1)  -- Reduce enemy health by 1
+
+                    if ene.hp == 0 then
+                        ene.s = 0  -- Set the enemy sprite to 0 or any other value to indicate disappearance
+                    end
+
+                    hook_launched = false
+                    print("Enemy hit!")  -- Add this line to print when the enemy is hit
+                    break  -- Stop checking further segments if there's a collision
+                end
+            end
+        else
+            hook_launched = false
+        end
+    end
+end
 
 -- draws the gem count
 -- on the bottom of the screen
@@ -241,7 +275,16 @@ function enemy_collision(pl,en)
 	return false
 end -- end of enemy_collision
 
-
+-->8
+--enemy damage collision
+function damage_grapple_collision(x, y, f)
+    local tile_x = flr(x / 8)
+    local tile_y = flr(y / 8)
+    if fget(mget(tile_x, tile_y), f) then
+		return true --collision detected
+	end
+	return false
+end
 
 
 
@@ -263,7 +306,7 @@ function grapple_collision(x,y,f)
  local tile_down = mget(tile_x, tile_y + 1)
 
  -- check if the current tile or any adjacent tile has the specified flag (4 in this case)
- if fget(tile_left, f) or fget(tile_right, f)  then
+ if fget(tile_left, f) or fget(tile_right, f) or fget(tile_up, f)  then
   return true -- collision detected
  end
     
@@ -372,7 +415,19 @@ cls()
 		 for i = 1, num_segments do
 		  local segment_x = hook_x + i * segment_length_x
 		  local segment_y = hook_y + i * segment_length_y
-	  
+
+		-- Check for collision with the enemy
+		  if damage_grapple_collision(segment_x, segment_y, 6) then
+			ene.hp = max(0, ene.hp - 1)  -- Reduce enemy health by 1
+
+			if ene.hp == 0 then
+				ene.s = 0  -- Set the enemy sprite to 0 or any other value to indicate disappearance
+			end
+
+			hook_launched = false
+			print("Enemy hit!")  -- Add this line to print when the enemy is hit
+			break  -- Stop checking further segments if there's a collision
+		  end
 		  -- check for collision with flag 4 (ice tiles)
 		  if grapple_collision(segment_x, segment_y, 3) then
 		   p.x = hook_x
@@ -380,10 +435,29 @@ cls()
 		   break  -- stop the rope when it hits a flag 4 tile
 		  end
 	  
-					  --spr(49, segment_x, segment_y, 1, 1)	
-		  spr(48, segment_x, segment_y, 1, 1) -- draw the rope segment
-		 end
-		 end
+		-- Assuming this is the line where you draw the rope segment
+			if i < num_segments then
+				-- Use sprite #48 for other segments
+				spr(48, segment_x, segment_y, 1, 1)
+			else
+
+					-- Use sprite #49 for other directions
+					if p.left then
+						-- Hook is moving left
+						spr(49, segment_x, segment_y, 1, 1, true)
+					
+					elseif p.right then
+						-- Hook is moving right
+						spr(0, segment_x, segment_y, 1, 1, true)  -- Flip sprite for right
+					
+					elseif p.up then
+						-- Hook is moving up
+						spr(50, segment_x, segment_y, 1, 1, true)
+					end
+				
+				end
+	end
+end
 	  
 			//print debugging info
 			--print("x"..p.x)
