@@ -73,6 +73,7 @@ local grappling_hook_sprite = 49 --the end of the grapple
 
 local player_speed = 2
 ----------------------------------*kylie
+enemy_cooldown_timer = 0
 
 hp = 10
 max_hp = 15
@@ -226,12 +227,22 @@ function _draw()
   	draw_menu()
   elseif scene=="game_easy" then
   	draw_game()
-			draw_enemy_health()
-			handle_grapple_enemy_collision()
+	if ene.is_dead then
+        -- Handle the disappearance or any other behavior of the dead enemy
+        -- For example, set ene.s to 0 if it represents the sprite
+        	ene.s = 0
+   	else
+        	handle_grapple_enemy_collision()
+    	end
   elseif scene=="game_hard" then
   	draw_game()
-			draw_enemy_health()
-			handle_grapple_enemy_collision()
+	if ene.is_dead then
+        -- Handle the disappearance or any other behavior of the dead enemy
+        -- For example, set ene.s to 0 if it represents the sprite
+        	ene.s = 0
+    	else
+        	handle_grapple_enemy_collision()
+    	end
   elseif scene=="victory" then
   	draw_victory()
   end
@@ -267,7 +278,7 @@ function handle_grapple_enemy_collision()
                 local segment_y = hook_y + i * (dy / 10)
 
                 -- Check for collision with the enemy
-                if damage_grapple_collision(segment_x, segment_y, 6) then
+                if damage_grapple_collision(segment_x, segment_y, 48) then
                     ene.hp = max(0, ene.hp - 1)  -- Reduce enemy health by 1
 
                     if ene.hp == 0 then
@@ -306,6 +317,22 @@ function _update()
 		update_menu()
 	elseif scene=="game_easy" or scene=="game_hard" then
 		update_game()
+-- Check if the player presses "z" and is within a certain distance of the enemy
+        	if btnp(4) and not hook_launched then
+            		local distance_to_enemy = sqrt((p.x - ene.x)^2 + (p.y - ene.y)^2)
+
+            -- Adjust the distance threshold as needed
+            		if distance_to_enemy < 20 then
+                		ene.hp = max(0, ene.hp - 1)  -- Reduce enemy health by 1
+
+                		if ene.hp == 0 then
+                    			ene.s = 32  -- Set the enemy sprite to 0 or any other value to indicate disappearance
+                		end
+
+                		print("Enemy hit!")  -- Add this line to print when the enemy is hit
+            		end
+        	end
+	
 	elseif scene=="victory" then
 		draw_victory()
 	end
@@ -380,27 +407,6 @@ function shadow_mask()
 	end
 end -- end of shadow_mask
 
--->8
--- enemy health bar -- 
-function draw_enemy_health()
-    local bar_width = 10  -- Adjust the width of the health bar as needed
-    local bar_height = 0   -- Adjust the height of the health bar as needed
-    local health_percent = ene.hp / max_hp
-
-    -- Calculate the position for the health bar
-    local bar_x = ene.x - (bar_width - 1) / 2
-    local bar_y = ene.y - bar_height - 1
-
-    -- Calculate the width of the filled part based on the health percentage
-    local filled_width = bar_width * health_percent
-
-    -- Draw the background of the health bar (empty part) in red
-    rectfill(bar_x, bar_y, bar_x + bar_width, bar_y + bar_height, 8)
-
-    -- Draw the actual health part of the health bar, with color based on health percentage
-    local health_color = flr(8 * (1 - health_percent)) + 8
-    rectfill(bar_x, bar_y, bar_x + filled_width, bar_y + bar_height, health_color)
-end
 
 
 -->8
@@ -586,17 +592,22 @@ cls()
 		  local segment_y = hook_y + i * segment_length_y
 
 		-- Check for collision with the enemy
-		  if damage_grapple_collision(segment_x, segment_y, 6) then
-			ene.hp = max(0, ene.hp - 1)  -- Reduce enemy health by 1
-
-			if ene.hp == 0 then
-				ene.s = 0  -- Set the enemy sprite to 0 or any other value to indicate disappearance
-			end
-
-			hook_launched = false
-			print("Enemy hit!")  -- Add this line to print when the enemy is hit
-			break  -- Stop checking further segments if there's a collision
-		  end
+		  -- Check for collision with the enemy
+if damage_grapple_collision(segment_x, segment_y, 6) then
+	-- Check if the enemy is still alive
+	if ene.hp > 0 then
+	  ene.hp = max(0, ene.hp - 1)  -- Reduce enemy health by 1
+  
+	  if ene.hp == 0 then
+		ene.s = 0  -- Set the enemy sprite to 0 or any other value to indicate disappearance
+	  end
+  
+	  -- Stop checking further segments if there's a collision
+	  hook_launched = false
+	  break
+	end
+  end
+  
 		  -- check for collision with flag 4 (ice tiles)
 		  if grapple_collision(segment_x, segment_y, 3) then
 		   p.x = hook_x
@@ -683,6 +694,20 @@ function update_game()
 	detect_victory()
 
 	--check if player is alive
+-- Check for enemy collision only if the enemy is not on cooldown and the player hasn't hit the enemy recently
+    if not (enemy_cooldown_timer > 0) and not hit_enemy then
+        if (ecollision(ene.x + 1, ene.x + 6, ene.y, ene.y + 7, p.x, rx, p.y, by) and (dmgtimer == 0)) then
+            p.hurt = true
+            hp = hp - 1
+            dmgtimer = 10
+
+            -- Apply the cooldown to both the player and the enemy
+            dmgtimer = 10  -- Adjust the cooldown time (in frames) as needed
+            enemy_cooldown_timer = 60  -- Adjust the cooldown time for the enemy as needed
+
+            print("Player hit by enemy!")
+        end
+    end
 if (hp>0) then
 -- check if player is damaged
 if dmgcounter>0 then
@@ -871,11 +896,13 @@ else
 	end
 	
 	--very quick enemy detection
+	if (ene.hp > 0) then
 	if (ecollision(ene.x+1,ene.x+6,ene.y,ene.y+7,p.x,rx,p.y,by) and (dmgtimer == 0)) then
 	 p.hurt=true
 	 hp-=1
 	 dmgtimer = 10
 	end
+end
 	
  //left controlls
  if btn(0) then
@@ -1353,4 +1380,3 @@ __sfx__
 000200000677008770097600a7600a7500b7500c7400d7400e7200e72000000317002d7003400039700000000000000000000000000000000000003a000357003000032700000000000000000000000000000000
 __music__
 00 01424344
-
